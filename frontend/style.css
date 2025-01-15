@@ -1,0 +1,51 @@
+/* style.css */
+
+/* REMOVIDO: body, header custom, pois estamos usando .navbar do Bootstrap 
+   Se quiser manter alguma cor, pode sobrescrever .navbar:
+*/
+
+/* Podemos usar Bootstrap .navbar em vez de header custom
+body {
+  margin: 0; 
+  padding: 0;
+  background: #e4e9f0; 
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+*/
+
+/* .container { 
+  background: #fff;
+  padding: 20px;
+  margin: 20px;
+  border-radius: 6px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.15);
+} 
+   -> Recomendamos usar .card para esse layout. 
+*/
+
+/* Seções ocultas (para login e registro) podem usar .d-none do Bootstrap. 
+.hidden {
+  display: none;
+} */
+
+/* Revisando:
+   - Mantemos form-group e form-control do Bootstrap, 
+   - Então não precisamos das regras que forçam input/textarea. 
+*/
+
+/* Ajustes pontuais: se quiser, 
+   personalize mas sem quebrar o .btn do Bootstrap.
+*/
+.btn-primary:hover {
+    /* Exemplo: trocar cor ao hover no .btn-primary */
+    background-color: #125987;
+    border-color: #0f4c73;
+  }
+  
+  /* Seções .container d-none para ocultar com classes do Bootstrap, ok */
+  
+  /* Atributo .editable para células editáveis na tabela */
+  .editable {
+    cursor: text;
+    background: #fcfcfc;
+  }

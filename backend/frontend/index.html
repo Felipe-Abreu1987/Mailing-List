@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sistema de Mailing List</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
+    }
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+    header, .container {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+    }
+    .hidden {
+      display: none;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input[type="text"], input[type="password"], textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 12px;
+    }
+    #lists-ul {
+      list-style: none;
+      padding: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+    }
+    #lists-ul li {
+      padding: 5px;
+      cursor: pointer;
+    }
+    #lists-ul li:hover {
+      background: #eee;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table th, table td {
+      border: 1px solid #ccc;
+      padding: 5px;
+      text-align: left;
+    }
+    .editable {
+      background-color: #fafafa;
+      cursor: text;
+    }
+    .modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none; /* Controlado via JS */
+    }
+    .modal-content {
+      background: #fff;
+      margin: 50px auto;
+      padding: 20px;
+      width: 400px;
+      position: relative;
+    }
+    .close-modal {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Sistema de Mailing List</h1>
+  </header>
+
+  <!-- SEÇÃO DE LOGIN -->
+  <div class="container" id="login-section">
+    <h2>Login</h2>
+    <label for="username">Usuário:</label>
+    <input type="text" id="username" />
+    <label for="password">Senha:</label>
+    <input type="password" id="password" />
+    <button id="btn-login">Entrar</button>
+    <div id="login-result"></div>
+  </div>
+
+  <!-- SEÇÃO PRINCIPAL (APÓS LOGIN) -->
+  <div class="container hidden" id="main-section">
+    <h2>Bem-vindo!</h2>
+    <p>Gerencie suas listas de e-mails abaixo.</p>
+
+    <!-- Colar e-mails para criar lista -->
+    <div>
+      <label for="paste-emails">Colar E-mails (separados por vírgula, ponto-e-vírgula ou quebra de linha):</label>
+      <textarea id="paste-emails" rows="4"></textarea>
+      <button id="btn-separate">Criar/Atualizar Lista</button>
+    </div>
+
+    <hr />
+
+    <!-- Listas existentes -->
+    <h3>Listas de E-mails</h3>
+    <ul id="lists-ul"></ul>
+    <button id="btn-delete-list">Excluir Lista</button>
+    <button id="btn-rename-list">Renomear Lista</button>
+    <button id="btn-export-outlook">Exportar para Outlook</button>
+
+    <hr />
+
+    <!-- E-mails da lista selecionada -->
+    <h3 id="selected-list-title">Nenhuma lista selecionada</h3>
+    <table id="emails-table">
+      <thead>
+        <tr>
+          <th>Nº</th>
+          <th>E-mail</th>
+          <th>Empresa</th>
+          <th>Contato</th>
+          <th>Telefone</th>
+          <th>Obs</th>
+          <th>Tags</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button id="btn-import-csv">Importar CSV</button>
+    <button id="btn-export-csv">Exportar CSV</button>
+    <button id="btn-create-email">Criar/Enviar E-mail</button>
+  </div>
+
+  <!-- MODAL: CRIAR E-MAIL -->
+  <div class="modal" id="modal-create-email">
+    <div class="modal-content">
+      <span class="close-modal" id="close-create-email">&times;</span>
+      <h2>Criar E-mail</h2>
+      <label for="email-to">Para:</label>
+      <input type="text" id="email-to" value="recepcao@prevenirss.com.br" />
+      <label for="email-bcc">BCC:</label>
+      <input type="text" id="email-bcc" />
+      <label for="email-subject">Assunto:</label>
+      <input type="text" id="email-subject" />
+      <label for="email-message">Mensagem:</label>
+      <textarea id="email-message" rows="4"></textarea>
+      <button id="btn-send-email">Enviar E-mail</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "http://localhost:3000"; // Ajuste se necessário
+
+    let currentListName = null;
+
+    // Elementos
+    const loginSection = document.getElementById("login-section");
+    const mainSection = document.getElementById("main-section");
+
+    const usernameField = document.getElementById("username");
+    const passwordField = document.getElementById("password");
+    const btnLogin = document.getElementById("btn-login");
+    const loginResult = document.getElementById("login-result");
+
+    const pasteEmails = document.getElementById("paste-emails");
+    const btnSeparate = document.getElementById("btn-separate");
+
+    const listsUl = document.getElementById("lists-ul");
+    const btnDeleteList = document.getElementById("btn-delete-list");
+    const btnRenameList = document.getElementById("btn-rename-list");
+    const btnExportOutlook = document.getElementById("btn-export-outlook");
+
+    const selectedListTitle = document.getElementById("selected-list-title");
+    const emailsTableBody = document.querySelector("#emails-table tbody");
+
+    const btnImportCsv = document.getElementById("btn-import-csv");
+    const btnExportCsv = document.getElementById("btn-export-csv");
+    const btnCreateEmail = document.getElementById("btn-create-email");
+
+    // Modal criar e-mail
+    const modalCreateEmail = document.getElementById("modal-create-email");
+    const closeCreateEmail = document.getElementById("close-create-email");
+    const btnSendEmail = document.getElementById("btn-send-email");
+    const emailTo = document.getElementById("email-to");
+    const emailBcc = document.getElementById("email-bcc");
+    const emailSubject = document.getElementById("email-subject");
+    const emailMessage = document.getElementById("email-message");
+
+    // ------------------------------
+    // LOGIN
+    // ------------------------------
+    btnLogin.addEventListener("click", async () => {
+      const username = usernameField.value;
+      const password = passwordField.value;
+      try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+          loginSection.classList.add("hidden");
+          mainSection.classList.remove("hidden");
+          loginResult.textContent = "";
+          loadLists();
+        } else {
+          loginResult.textContent = data.message || "Falha no login.";
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // ------------------------------
+    // CARREGAR LISTAS
+    // ------------------------------
+    async function loadLists() {
+      listsUl.innerHTML = "";
+      try {
+        const res = await fetch(`${API_URL}/lists`);
+        const data = await res.json();
+        data.forEach(list => {
+          const li = document.createElement("li");
+          li.textContent = `${list.name} (${list.count} e-mails)`;
+          li.addEventListener("click", () => {
+            // Extrair apenas o nome real da lista
+            currentListName = list.name;
+            selectedListTitle.textContent = `Lista: ${currentListName} (${list.count} e-mails)`;
+            loadEmails(currentListName);
+          });
+          listsUl.appendChild(li);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ------------------------------
+    // CRIAR / ATUALIZAR LISTA
+    // ------------------------------
+    btnSeparate.addEventListener("click", async () => {
+      const rawEmails = pasteEmails.value.trim();
+      if (!rawEmails) {
+        alert("Cole algum e-mail para criar/atualizar a lista.");
+        return;
+      }
+      const listName = prompt("Digite o nome da lista que deseja criar/atualizar:");
+      if (!listName) return;
+
+      try {
+        const res = await fetch(`${API_URL}/lists/${encodeURIComponent(listName)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rawEmails })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`${data.count} e-mails adicionados/atualizados na lista "${listName}".`);
+          pasteEmails.value = "";
+          loadLists();
+        } else {
+          alert(data.message || "Erro ao criar/atualizar lista.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // ------------------------------
+    // CARREGAR E-MAILS DE UMA LISTA
+    // ------------------------------
+    async function loadEmails(listName) {
+      emailsTableBody.innerHTML = "";
+      try {
+        const res = await fetch(`${API_URL}/lists/${encodeURIComponent(listName)}/emails`);
+        const emails = await res.json();
+
+        emails.forEach((emailData, index) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${index + 1}</td>
+            <td class="editable" data-field="email">${emailData.email}</td>
+            <td class="editable" data-field="empresa">${emailData.empresa || ""}</td>
+            <td class="editable" data-field="contato">${emailData.contato || ""}</td>
+            <td class="editable" data-field="telefone">${emailData.telefone || ""}</td>
+            <td class="editable" data-field="obs">${emailData.obs || ""}</td>
+            <td class="editable" data-field="tags">${(emailData.tags || []).join(", ")}</td>
+            <td>
+              <button class="btn-move">Mover</button>
+              <button class="btn-delete">Excluir</button>
+            </td>
+          `;
+          // Edição inline
+          row.querySelectorAll(".editable").forEach(cell => {
+            cell.addEventListener("blur", () => {
+              const newValue = cell.textContent;
+              const field = cell.dataset.field;
+              updateEmail(listName, emailData.email, field, newValue);
+            });
+          });
+          // Botão mover
+          row.querySelector(".btn-move").addEventListener("click", () => {
+            const destination = prompt("Digite o nome da lista de destino:");
+            if (destination) {
+              moveEmail(listName, emailData.email, destination);
+            }
+          });
+          // Botão excluir
+          row.querySelector(".btn-delete").addEventListener("click", () => {
+            if (confirm(`Deseja excluir o e-mail "${emailData.email}"?`)) {
+              deleteEmail(listName, emailData.email);
+            }
+          });
+
+          emailsTableBody.appendChild(row);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ------------------------------
+    // ATUALIZAR UM E-MAIL
+    // ------------------------------
+    async function updateEmail(listName, oldEmail, field, newValue) {
+      try {
+        await fetch(`${API_URL}/lists/${encodeURIComponent(listName)}/emails/${encodeURIComponent(oldEmail)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field, newValue })
+        });
+        // Em caso de sucesso, nada mais a fazer
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ------------------------------
+    // MOVER E-MAIL PARA OUTRA LISTA
+    // ------------------------------
+    async function moveEmail(listName, email, destinationList) {
+      try {
+        const res = await fetch(`${API_URL}/lists/${encodeURIComponent(listName)}/move`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, destinationList })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message || "E-mail movido.");
+          loadLists();
+          loadEmails(listName);
+        } else {
+          alert(data.message || "Erro ao mover e-mail.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ------------------------------
+    // EXCLUIR E-MAIL
+    // ------------------------------
+    async function deleteEmail(listName, email) {
+      try {
+        const res = await fetch(`${API_URL}/lists/${encodeURIComponent(listName)}/emails/${encodeURIComponent(email)}`, {
+          method: "DELETE"
+        });
+        if (res.ok) {
+          alert("E-mail excluído.");
+          loadLists();
+          loadEmails(listName);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // ------------------------------
+    // EXCLUIR LISTA
+    // ------------------------------
+    btnDeleteList.addEventListener("click", async () => {
+      if (!currentListName) {
+        alert("Nenhuma lista selecionada.");
+        return;
+      }
+      if (!confirm(`Deseja excluir a lista "${currentListName}"?`)) return;
+      try {
+        const res = await fetch(`${API_URL}/lists/${encodeURIComponent(currentListName)}`, {
+          method: "DELETE"
+        });
+        if (res.ok) {
+          alert(`Lista "${currentListName}" excluída.`);
+          currentListName = null;
+          selectedListTitle.textContent = "Nenhuma lista selecionada";
+          emailsTableBody.innerHTML = "";
+          loadLists();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // ------------------------------
+    // RENOMEAR LISTA
+    // ------------------------------
+    btnRenameList.addEventListener("click", async () => {
+      if (!currentListName) {
+        alert("Nenhuma lista selecionada.");
+        return;
+      }
+      const newName = prompt(`Digite o novo nome da lista "${currentListName}":`);
+      if (!newName) return;
+      try {
+        const res = await fetch(`${API_URL}/lists/${encodeURIComponent(currentListName)}/rename`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ newName })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message || "Lista renomeada.");
+          currentListName = newName;
+          loadLists();
+        } else {
+          alert(data.message || "Erro ao renomear lista.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // ------------------------------
+    // EXPORTAR PARA OUTLOOK
+    // ------------------------------
+    btnExportOutlook.addEventListener("click", async () => {
+      if (!currentListName) {
+        alert("Nenhuma lista selecionada.");
+        return;
+      }
+      try {
+        const res = await fetch(`${API_URL}/export-outlook/${encodeURIComponent(currentListName)}`, {
+          method: "POST"
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Exportado para Outlook (CCo): ${data.message}`);
+        } else {
+          alert(data.error || "Erro ao exportar para Outlook.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // ------------------------------
+    // CRIAR E-MAIL (ABRIR MODAL)
+    // ------------------------------
+    btnCreateEmail.addEventListener("click", async () => {
+      if (!currentListName) {
+        alert("Nenhuma lista selecionada.");
+        return;
+      }
+      // Carregar os e-mails da lista para BCC
+      try {
+        const res = await fetch(`${API_URL}/lists/${encodeURIComponent(currentListName)}/emails`);
+        const data = await res.json();
+        const addresses = data.map((item) => item.email);
+        emailBcc.value = addresses.join("; ");
+        // Exibir modal
+        modalCreateEmail.style.display = "block";
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    closeCreateEmail.addEventListener("click", () => {
+      modalCreateEmail.style.display = "none";
+    });
+
+    btnSendEmail.addEventListener("click", async () => {
+      const to = emailTo.value;
+      const bcc = emailBcc.value;
+      const subject = emailSubject.value;
+      const message = emailMessage.value;
+      try {
+        const res = await fetch(`${API_URL}/send-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to, bcc, subject, message })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("E-mail preparado no Outlook com sucesso!");
+          modalCreateEmail.style.display = "none";
+        } else {
+          alert(data.error || "Erro ao enviar e-mail.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // ------------------------------
+    // IMPORTAR CSV
+    // ------------------------------
+    btnImportCsv.addEventListener("click", async () => {
+      if (!currentListName) {
+        alert("Nenhuma lista selecionada.");
+        return;
+      }
+      const filePath = prompt("Digite o caminho do CSV no servidor:");
+      if (!filePath) return;
+      try {
+        const res = await fetch(`${API_URL}/lists/${encodeURIComponent(currentListName)}/import-csv`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filePath })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`${data.imported} e-mails importados da CSV com sucesso.`);
+          loadEmails(currentListName);
+        } else {
+          alert(data.error || "Erro ao importar CSV.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // ------------------------------
+    // EXPORTAR CSV
+    // ------------------------------
+    btnExportCsv.addEventListener("click", async () => {
+      if (!currentListName) {
+        alert("Nenhuma lista selecionada.");
+        return;
+      }
+      try {
+        // Faz um GET que retorna o CSV
+        const res = await fetch(`${API_URL}/lists/${encodeURIComponent(currentListName)}/export-csv`);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${currentListName}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        } else {
+          alert("Erro ao exportar CSV.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Clicar fora do modal (opcional) para fechá-lo
+    window.addEventListener("click", (event) => {
+      if (event.target === modalCreateEmail) {
+        modalCreateEmail.style.display = "none";
+      }
+    });
+  </script>
+
+</body>
+</html>
+

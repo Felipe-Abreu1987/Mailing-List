@@ -1,0 +1,5 @@
+# Ignora o arquivo do banco de dados
+database.sqlite
+
+# (Opcional) Ignora a pasta node_modules (caso não queira subi-la)
+node_modules/

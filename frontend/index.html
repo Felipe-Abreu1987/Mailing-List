@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sistema de Mailing List</title>
+
+  <!-- Font Awesome (Ícones) -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    integrity="sha512-Fo3rlrZj/k7ujTnwxVVkpcyzRB+9E5+YIkPxCSPOUOqkIUy5RMTRh81VeYVr2yoGyvXDwBEsYLbF29m8F3Wotw=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+
+  <!-- Bootstrap CSS (CDN) -->
+  <link 
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  />
+
+  <!-- Estilos personalizados -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Barra de Navegação -->
+  <nav class="navbar navbar-dark bg-dark mb-4">
+    <span class="navbar-brand mb-0 h1">
+      <i class="fas fa-envelope"></i> Sistema de Mailing List
+    </span>
+  </nav>
+
+  <!-- SEÇÃO DE LOGIN -->
+  <div class="container mb-4" id="login-section">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h5 m-0"><i class="fas fa-user-lock"></i> Login</h2>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label for="username">Usuário:</label>
+          <input type="text" id="username" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label for="password">Senha:</label>
+          <input type="password" id="password" class="form-control" />
+        </div>
+        <button id="btn-login" class="btn btn-primary">
+          <i class="fas fa-sign-in-alt"></i> Entrar
+        </button>
+        <div id="login-result" class="text-danger mt-3"></div>
+        <hr />
+        <a href="#" id="link-register">Criar Registro</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO DE REGISTRO -->
+  <div class="container mb-4 d-none" id="register-section">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="h5 m-0"><i class="fas fa-user-plus"></i> Criar Novo Registro</h2>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label for="register-username">Usuário:</label>
+          <input type="text" id="register-username" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label for="register-password">Senha:</label>
+          <input type="password" id="register-password" class="form-control" />
+        </div>
+        <button id="btn-create-user" class="btn btn-success">
+          <i class="fas fa-save"></i> Registrar
+        </button>
+        <div id="register-result" class="text-danger mt-3"></div>
+        <hr />
+        <a href="#" id="link-back-login">Voltar ao Login</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO PRINCIPAL (APÓS LOGIN) -->
+  <div class="container d-none" id="main-section">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h2 class="h5 m-0">Bem-vindo!</h2>
+      </div>
+      <div class="card-body">
+        <p>Gerencie suas listas de e-mails abaixo.</p>
+        <!-- Colar e-mails para criar lista -->
+        <div class="form-group">
+          <label for="paste-emails">Colar E-mails (separados por vírgula, ; ou nova linha):</label>
+          <textarea id="paste-emails" rows="4" class="form-control mb-2"></textarea>
+          <button id="btn-separate" class="btn btn-info">
+            <i class="fas fa-list"></i> Criar/Atualizar Lista
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="h6 m-0"><i class="fas fa-folder-open"></i> Listas de E-mails</h3>
+      </div>
+      <div class="card-body">
+        <ul id="lists-ul" class="list-group mb-3" style="max-height: 200px; overflow-y: auto;"></ul>
+        <button id="btn-delete-list" class="btn btn-danger mr-2">
+          <i class="fas fa-trash-alt"></i> Excluir Lista
+        </button>
+        <button id="btn-rename-list" class="btn btn-warning mr-2">
+          <i class="fas fa-edit"></i> Renomear Lista
+        </button>
+        <button id="btn-export-outlook" class="btn btn-secondary">
+          <i class="fas fa-paper-plane"></i> Exportar para Outlook
+        </button>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="h6 m-0" id="selected-list-title">Nenhuma lista selecionada</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table id="emails-table" class="table table-bordered">
+            <thead class="thead-light">
+              <tr>
+                <th>Nº</th>
+                <th>E-mail</th>
+                <th>Razão Social</th> 
+                <th>Contato</th>
+                <th>Telefone</th>
+                <th>Obs</th>
+                <th>Tags</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <button id="btn-import-csv" class="btn btn-outline-success mr-2">
+          <i class="fas fa-file-import"></i> Importar CSV
+        </button>
+        <button id="btn-export-csv" class="btn btn-outline-primary mr-2">
+          <i class="fas fa-file-export"></i> Exportar CSV
+        </button>
+        <button id="btn-create-email" class="btn btn-primary">
+          <i class="fas fa-envelope"></i> Criar/Enviar E-mail
+        </button>
+      </div>
+    </div>
+
+    <button id="btn-generate-report" class="btn btn-dark">
+      <i class="fas fa-chart-bar"></i> Gerar Relatório
+    </button>
+  </div>
+
+  <!-- MODAL: CRIAR E-MAIL (usando Bootstrap) -->
+  <div class="modal fade" id="modal-create-email" tabindex="-1" role="dialog" aria-labelledby="createEmailModal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createEmailModal">
+            <i class="fas fa-envelope-open"></i> Criar E-mail
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true" id="close-create-email">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="email-to">Para:</label>
+            <input type="text" class="form-control" id="email-to" value="recepcao@prevenirss.com.br" />
+          </div>
+          <div class="form-group">
+            <label for="email-bcc">BCC:</label>
+            <input type="text" class="form-control" id="email-bcc" />
+          </div>
+          <div class="form-group">
+            <label for="email-subject">Assunto:</label>
+            <input type="text" class="form-control" id="email-subject" />
+          </div>
+          <div class="form-group">
+            <label for="email-message">Mensagem:</label>
+            <textarea id="email-message" rows="4" class="form-control"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-send-email">
+            <i class="fas fa-paper-plane"></i> Enviar E-mail
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery + Bootstrap JS (CDN) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Script principal -->
+  <script src="script.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
